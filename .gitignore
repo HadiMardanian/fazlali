@@ -1,0 +1,6 @@
+agent-prompts/
+docs/dev-pipeline/SESSION-CACHE.md
+.codecortex/
+src/room-api/node_modules
+src/room-api/dist
+dist/
