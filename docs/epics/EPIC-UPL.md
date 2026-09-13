@@ -7,7 +7,7 @@
 |------------|---------|--------|----------|------------|--------|--------|
 | UPL-01 | Presigned init/complete | done | P0 | ROOM-01, ROOM-03 | — | UPL-03 |
 | UPL-02 | Multipart/chunked resume | done | P0 | UPL-01 | — | — |
-| UPL-03 | Processing queue (thumb/meta/web) | todo | P1 | UPL-01 | — | GAL-01 |
+| UPL-03 | Processing queue (thumb/meta/web) | done | P1 | UPL-01 | — | GAL-01 |
 | UPL-04 | Malware scan + GPS strip | todo | P1 | UPL-03 | — | GAL-01 |
 
 ## UPL-01 — Presigned init/complete
@@ -27,7 +27,7 @@
 - Claims: CLM-006
 
 ## UPL-03 — Processing queue
-**Status:** todo
+**Status:** done
 ### Acceptance
 - Thumbnails, technical metadata, web variants/transcoding via Job Queue outside request cycle.
 ### Links
