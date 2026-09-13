@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Headers,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
@@ -13,6 +14,7 @@ import {
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { GuestSessionDto } from './dto/guest-session.dto';
 import { Room } from './room.entity';
 
 @Controller('rooms')
@@ -51,5 +53,14 @@ export class RoomController {
   @Post(':id/rotate-link')
   rotateLink(@Param('id', ParseUUIDPipe) id: string) {
     return this.roomService.rotateLink(id);
+  }
+
+  @Post(':id/guest-session')
+  createGuestSession(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GuestSessionDto,
+    @Headers('x-device-id') deviceId?: string,
+  ) {
+    return this.roomService.createGuestSession(id, dto, deviceId || 'unknown');
   }
 }

@@ -5,13 +5,13 @@
 
 | Feature ID | Feature | Status | Priority | depends_on | co_req | blocks |
 |------------|---------|--------|----------|------------|--------|--------|
-| UPL-01 | Presigned init/complete | todo | P0 | ROOM-01, ROOM-03 | — | UPL-03 |
-| UPL-02 | Multipart/chunked resume | todo | P0 | UPL-01 | — | — |
+| UPL-01 | Presigned init/complete | done | P0 | ROOM-01, ROOM-03 | — | UPL-03 |
+| UPL-02 | Multipart/chunked resume | done | P0 | UPL-01 | — | — |
 | UPL-03 | Processing queue (thumb/meta/web) | todo | P1 | UPL-01 | — | GAL-01 |
 | UPL-04 | Malware scan + GPS strip | todo | P1 | UPL-03 | — | GAL-01 |
 
 ## UPL-01 — Presigned init/complete
-**Status:** todo
+**Status:** done
 ### Acceptance
 - Metadata post → temp Media → presigned URL → direct PUT → complete enqueues job; no backend bandwidth.
 ### Links
@@ -19,7 +19,7 @@
 - Claims: CLM-005
 
 ## UPL-02 — Multipart resume
-**Status:** todo
+**Status:** done
 ### Acceptance
 - Split/parallel parts, validate, complete, auto-abort incomplete; resume after disconnect.
 ### Links

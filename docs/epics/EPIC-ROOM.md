@@ -7,7 +7,7 @@
 |------------|---------|--------|----------|------------|--------|--------|
 | ROOM-01 | Room CRUD + settings + modes | todo | P0 | — | — | ROOM-02, ROOM-03, UPL-01 |
 | ROOM-02 | Entry kit (QR/link/poster/PIN, rotate) | done | P0 | ROOM-01 | — | ROOM-03 |
-| ROOM-03 | Guest no-signup session | todo | P0 | ROOM-01 | — | UPL-01, GAL-01 |
+| ROOM-03 | Guest no-signup session | done | P0 | ROOM-01 | — | UPL-01, GAL-01 |
 | ROOM-04 | Roles + block + AuditLog | todo | P1 | ROOM-01 | GAL-02 | — |
 
 ## ROOM-01 — Room CRUD + settings + modes
@@ -27,7 +27,7 @@
 - Claims: CLM-002, CLM-012
 
 ## ROOM-03 — Guest session
-**Status:** todo
+**Status:** done
 ### Acceptance
 - Display name + terms accept → short-lived revocable token with session timeout.
 ### Links

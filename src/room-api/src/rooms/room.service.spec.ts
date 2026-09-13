@@ -1,36 +1,117 @@
+import {
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
+import { RoomService } from './room.service';
+import { Room } from './room.entity';
+import { Membership } from './membership.entity';
+import { RoomMode } from './room-mode.enum';
 
-function generateSlug(): string {
-  return crypto.randomBytes(7).toString('base64url').slice(0, 10);
-}
+describe('RoomService', () => {
+  let service: RoomService;
+  let roomRepo: Record<string, jest.Mock>;
+  let membershipRepo: Record<string, jest.Mock>;
 
-describe('Slug generation', () => {
-  it('generates a 10-char URL-safe slug', () => {
-    const slug = generateSlug();
-    expect(typeof slug).toBe('string');
-    expect(slug).toHaveLength(10);
-    expect(slug).toMatch(/^[a-zA-Z0-9_-]+$/);
+  const room: Room = {
+    id: 'b4b3c9a8-0000-4000-8000-000000000001',
+    ownerId: 'owner-1',
+    title: 'Wedding',
+    eventDate: null,
+    guestCapacity: null,
+    mode: RoomMode.PRIVATE,
+    package: null,
+    retentionUntil: null,
+    status: 'active',
+    inviteLink: 'https://localhost/r/aaaaaaaaaa',
+    pinHash: null,
+    branding: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  beforeEach(() => {
+    roomRepo = {
+      findOneBy: jest.fn().mockResolvedValue(room),
+      save: jest.fn().mockImplementation((r: Room) => Promise.resolve(r)),
+      create: jest.fn().mockImplementation((r: Partial<Room>) => r as Room),
+    };
+    membershipRepo = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn().mockImplementation((m: Partial<Membership>) => m as Membership),
+      save: jest.fn().mockImplementation((m: Membership) => Promise.resolve(m)),
+    };
+    service = new RoomService(roomRepo as any, membershipRepo as any);
   });
 
-  it('generates unique slugs across 1000 calls', () => {
-    const slugs = new Set<string>();
-    for (let i = 0; i < 1000; i++) {
-      slugs.add(generateSlug());
-    }
-    expect(slugs.size).toBe(1000);
+  describe('createGuestSession', () => {
+    it('returns token + expiresAt ~24h and stores sha256 tokenHash', async () => {
+      const result = await service.createGuestSession(
+        room.id,
+        { displayName: 'Sara', acceptTerms: true },
+        'device-1',
+      );
+
+      expect(result.token).toMatch(/^[a-f0-9]{64}$/);
+      const ttl = result.expiresAt.getTime() - Date.now();
+      expect(ttl).toBeGreaterThan(23 * 60 * 60 * 1000);
+      expect(ttl).toBeLessThanOrEqual(24 * 60 * 60 * 1000 + 1000);
+
+      expect(membershipRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          roomId: room.id,
+          deviceId: 'device-1',
+          displayName: 'Sara',
+          role: 'Guest',
+          blocked: false,
+        }),
+      );
+      const saved = (membershipRepo.save as jest.Mock).mock.calls[0][0] as Membership;
+      expect(saved.tokenHash).toBe(
+        crypto.createHash('sha256').update(result.token).digest('hex'),
+      );
+    });
+
+    it('rejects when terms not accepted', async () => {
+      await expect(
+        service.createGuestSession(room.id, { displayName: 'Sara', acceptTerms: false }, 'device-1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects unknown room with 404', async () => {
+      roomRepo.findOneBy.mockResolvedValueOnce(null);
+      await expect(
+        service.createGuestSession(room.id, { displayName: 'Sara', acceptTerms: true }, 'device-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects blocked device', async () => {
+      membershipRepo.findOneBy.mockResolvedValueOnce({ id: 'm1', blocked: true } as Membership);
+      await expect(
+        service.createGuestSession(room.id, { displayName: 'Sara', acceptTerms: true }, 'device-1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects room without active invite link', async () => {
+      roomRepo.findOneBy.mockResolvedValueOnce({ ...room, inviteLink: null });
+      await expect(
+        service.createGuestSession(room.id, { displayName: 'Sara', acceptTerms: true }, 'device-1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 
-  it('generates different slugs on consecutive calls', () => {
-    const a = generateSlug();
-    const b = generateSlug();
-    expect(a).not.toBe(b);
-  });
-});
+  describe('rotateLink', () => {
+    it('changes slug and revokes memberships', async () => {
+      await service.rotateLink(room.id);
 
-describe('inviteLink format', () => {
-  it('matches expected URL pattern', () => {
-    const slug = generateSlug();
-    const link = `https://localhost/r/${slug}`;
-    expect(link).toMatch(/^https:\/\/localhost\/r\/[a-zA-Z0-9_-]{10}$/);
+      expect(roomRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ inviteLink: expect.stringMatching(/^https:\/\/localhost\/r\/[a-zA-Z0-9_-]{10}$/) }),
+      );
+      expect(membershipRepo.update).toHaveBeenCalledWith(
+        { roomId: room.id },
+        { sessionExpiry: expect.any(Date) },
+      );
+    });
   });
 });
