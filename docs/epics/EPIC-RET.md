@@ -7,7 +7,7 @@
 |------------|---------|--------|----------|------------|--------|--------|
 | RET-01 | Packages + payment + extend | done | P0 | ROOM-01 | — | RET-03 |
 | RET-02 | ZIP build + expiring downloads | done | P1 | UPL-01 | — | — |
-| RET-03 | Expiry notices + 7-day grace | in_progress | P1 | RET-01 | — | — |
+| RET-03 | Expiry notices + 7-day grace | done | P1 | RET-01 | — | — |
 | RET-04 | Stats (join/upload/volume) | todo | P2 | UPL-01, GAL-01 | — | — |
 | RET-05 | Fair-use caps enforcement | todo | P1 | ROOM-01, UPL-01 | — | — |
 
