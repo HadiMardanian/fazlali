@@ -54,6 +54,15 @@ export class Media {
   @Column({ type: 'varchar', length: 20, default: 'temp' })
   status: string;
 
+  @Column({ type: 'bit', default: false })
+  gpsStripped: boolean;
+
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  malwareScanStatus: string;
+
+  @Column({ type: 'nvarchar', length: 500, nullable: true })
+  malwareNote: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

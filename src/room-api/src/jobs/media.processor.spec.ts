@@ -6,8 +6,20 @@ jest.mock('@nestjs/schedule', () => ({
   Interval: () => () => undefined,
 }));
 
+jest.mock('./exif-stripper.service', () => ({
+  ExifStripperService: jest.fn().mockImplementation(() => ({
+    stripExif: jest.fn().mockResolvedValue(Buffer.from('stripped')),
+  })),
+}));
+
+jest.mock('./malware-scanner.service', () => ({
+  MalwareScannerService: jest.fn().mockImplementation(() => ({
+    scan: jest.fn().mockResolvedValue({ status: 'clean' }),
+  })),
+}));
+
 jest.mock('@aws-sdk/client-s3', () => {
-  const classes = ['PutObjectCommand', 'CopyObjectCommand', 'CreateMultipartUploadCommand', 'UploadPartCommand', 'CompleteMultipartUploadCommand', 'AbortMultipartUploadCommand'];
+  const classes = ['PutObjectCommand', 'CopyObjectCommand', 'CreateMultipartUploadCommand', 'UploadPartCommand', 'CompleteMultipartUploadCommand', 'AbortMultipartUploadCommand', 'GetObjectCommand'];
   const exports: Record<string, any> = {};
   for (const name of classes) {
     exports[name] = class {
@@ -19,7 +31,11 @@ jest.mock('@aws-sdk/client-s3', () => {
     Object.defineProperty(exports[name], 'name', { value: name });
   }
   exports.S3Client = class {
-    send = jest.fn(async () => ({}));
+    send = jest.fn(async () => ({
+      Body: {
+        transformToString: async () => 'original-buffer-content',
+      },
+    }));
   };
   return exports;
 });
@@ -60,6 +76,9 @@ function makeMedia(overrides: Partial<Media> = {}): Media {
     size: 1024,
     mime: 'video/mp4',
     status: 'queued',
+    gpsStripped: false,
+    malwareScanStatus: 'pending',
+    malwareNote: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -94,6 +113,8 @@ function buildProcessor(job: Job | null, media: Media | null) {
   const processor = new MediaProcessor(
     jobRepo as any,
     mediaRepo as any,
+    { stripExif: jest.fn().mockResolvedValue(Buffer.from('stripped')) } as any,
+    { scan: jest.fn().mockResolvedValue({ status: 'clean' }) } as any,
     makeConfig({ S3_BUCKET: 'test-bucket', PROCESSOR_ENABLED: 'true' }),
   );
   return { processor, jobRepo, mediaRepo, jobSaves, mediaSaves };
@@ -117,11 +138,15 @@ describe('MediaProcessor', () => {
         status: 'approved',
         thumbKey: `${ROOM_ID}/${MEDIA_ID}/thumb`,
         webKey: `${ROOM_ID}/${MEDIA_ID}/web`,
+        gpsStripped: true,
+        malwareScanStatus: 'clean',
       }),
     );
 
     const s3calls = (processor as any).s3.send.mock.calls.map((c: any[]) => c[0].constructor.name);
-    expect(s3calls).toEqual(['CopyObjectCommand', 'CopyObjectCommand']);
+    expect(s3calls).toContain('GetObjectCommand');
+    expect(s3calls).toContain('CopyObjectCommand');
+    expect(s3calls).toContain('PutObjectCommand');
   });
 
   it('retries S3 failure until maxAttempts then fails terminal', async () => {
@@ -160,9 +185,44 @@ describe('MediaProcessor', () => {
     const processor = new MediaProcessor(
       { createQueryBuilder: jest.fn() } as any,
       { findOneBy: jest.fn() } as any,
+      { stripExif: jest.fn() } as any,
+      { scan: jest.fn() } as any,
       makeConfig({ S3_BUCKET: 'b', PROCESSOR_ENABLED: 'false' }),
     );
     await processor.tick();
     expect((processor as any).jobRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
+  it('rejects media when malware scan returns infected', async () => {
+    const { processor, jobSaves, mediaSaves } = buildProcessor(
+      makeJob(),
+      makeMedia({ status: 'queued' }),
+    );
+    (processor as any).malwareScanner.scan = jest.fn().mockResolvedValue({ status: 'infected', note: 'trojan detected' });
+
+    await processor.tick();
+
+    expect(jobSaves.at(-1)).toEqual(expect.objectContaining({ status: 'done', error: null }));
+    expect(mediaSaves.at(-1)).toEqual(
+      expect.objectContaining({
+        status: 'rejected',
+        malwareScanStatus: 'infected',
+        malwareNote: 'trojan detected',
+      }),
+    );
+
+    const s3calls = (processor as any).s3.send.mock.calls.map((c: any[]) => c[0].constructor.name);
+    expect(s3calls).not.toContain('CopyObjectCommand');
+  });
+
+  it('calls GPS strip service before processing', async () => {
+    const { processor } = buildProcessor(
+      makeJob(),
+      makeMedia({ status: 'queued' }),
+    );
+
+    await processor.tick();
+
+    expect((processor as any).exifStripper.stripExif).toHaveBeenCalled();
   });
 });

@@ -5,7 +5,7 @@
 
 | Feature ID | Feature | Status | Priority | depends_on | co_req | blocks |
 |------------|---------|--------|----------|------------|--------|--------|
-| RET-01 | Packages + payment + extend | todo | P0 | ROOM-01 | — | RET-03 |
+| RET-01 | Packages + payment + extend | done | P0 | ROOM-01 | — | RET-03 |
 | RET-02 | ZIP build + expiring downloads | todo | P1 | UPL-01 | — | — |
 | RET-03 | Expiry notices + 7-day grace | todo | P1 | RET-01 | — | — |
 | RET-04 | Stats (join/upload/volume) | todo | P2 | UPL-01, GAL-01 | — | — |

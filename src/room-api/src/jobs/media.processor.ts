@@ -6,9 +6,13 @@ import { Repository } from 'typeorm';
 import {
   S3Client,
   CopyObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { Job } from './job.entity';
 import { Media } from '../media/media.entity';
+import { ExifStripperService } from './exif-stripper.service';
+import { MalwareScannerService } from './malware-scanner.service';
 
 @Injectable()
 export class MediaProcessor {
@@ -22,6 +26,8 @@ export class MediaProcessor {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(Media)
     private readonly mediaRepo: Repository<Media>,
+    private readonly exifStripper: ExifStripperService,
+    private readonly malwareScanner: MalwareScannerService,
     config: ConfigService,
   ) {
     this.bucketName = config.get<string>('S3_BUCKET') || '';
@@ -83,6 +89,44 @@ export class MediaProcessor {
     await this.mediaRepo.save(media);
 
     try {
+      // Step 1: Strip GPS/EXIF
+      const originalObject = await this.s3.send(
+        new GetObjectCommand({ Bucket: this.bucketName, Key: media.originalKey }),
+      );
+      if (!originalObject.Body) {
+        throw new Error('Failed to retrieve original file from S3');
+      }
+      const buffer = await originalObject.Body.transformToString();
+      const strippedBuffer = await this.exifStripper.stripExif(Buffer.from(buffer));
+      
+      // Upload stripped version back to S3
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: media.originalKey,
+          Body: strippedBuffer,
+          ContentType: media.mime,
+        }),
+      );
+      media.gpsStripped = true;
+      await this.mediaRepo.save(media);
+
+      // Step 2: Malware scan
+      const scanResult = await this.malwareScanner.scan(media.originalKey);
+      media.malwareScanStatus = scanResult.status;
+      
+      if (scanResult.status === 'infected') {
+        media.status = 'rejected';
+        media.malwareNote = scanResult.note ?? 'File detected as infected';
+        await this.mediaRepo.save(media);
+        job.status = 'done';
+        job.error = null;
+        job.finishedAt = new Date();
+        await this.jobRepo.save(job);
+        return;
+      }
+
+      // Step 3: Create thumb/web variants
       media.thumbKey = `${media.roomId}/${media.id}/thumb`;
       media.webKey = `${media.roomId}/${media.id}/web`;
 

@@ -8,7 +8,7 @@
 | UPL-01 | Presigned init/complete | done | P0 | ROOM-01, ROOM-03 | — | UPL-03 |
 | UPL-02 | Multipart/chunked resume | done | P0 | UPL-01 | — | — |
 | UPL-03 | Processing queue (thumb/meta/web) | done | P1 | UPL-01 | — | GAL-01 |
-| UPL-04 | Malware scan + GPS strip | todo | P1 | UPL-03 | — | GAL-01 |
+| UPL-04 | Malware scan + GPS strip | done | P1 | UPL-03 | — | GAL-01 |
 
 ## UPL-01 — Presigned init/complete
 **Status:** done
@@ -35,7 +35,7 @@
 - Claims: CLM-007
 
 ## UPL-04 — Malware + GPS strip
-**Status:** todo
+**Status:** done
 ### Acceptance
 - Pre-publish malware scan; GPS/sensitive EXIF stripped; MIME + size limits enforced.
 ### Links
