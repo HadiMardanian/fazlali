@@ -62,7 +62,7 @@ export class MediaProcessor {
     await this.process(job);
   }
 
-  private async process(job: Job): Promise<void> {
+  async process(job: Job): Promise<void> {
     if (!job.mediaId) {
       job.status = 'failed';
       job.error = 'Job has no mediaId';

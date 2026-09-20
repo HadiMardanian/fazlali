@@ -9,12 +9,14 @@ import { Room } from './room.entity';
 import { Membership } from './membership.entity';
 import { Payment } from './payment.entity';
 import { RoomMode } from './room-mode.enum';
+import { RetentionService } from './retention.service';
 
 describe('RoomService', () => {
   let service: RoomService;
   let roomRepo: Record<string, jest.Mock>;
   let membershipRepo: Record<string, jest.Mock>;
   let paymentRepo: Record<string, jest.Mock>;
+  let retentionService: Partial<RetentionService>;
 
   const room: Room = {
     id: 'b4b3c9a8-0000-4000-8000-000000000001',
@@ -50,7 +52,10 @@ describe('RoomService', () => {
       create: jest.fn().mockImplementation((p: Partial<Payment>) => ({ ...p, id: 'pay-1' } as Payment)),
       save: jest.fn().mockImplementation((p: Payment) => Promise.resolve(p)),
     };
-    service = new RoomService(roomRepo as any, membershipRepo as any, paymentRepo as any);
+    retentionService = {
+      scheduleRetention: jest.fn().mockResolvedValue({ policyId: 'policy-1' }),
+    };
+    service = new RoomService(roomRepo as any, membershipRepo as any, paymentRepo as any, retentionService as any);
   });
 
   describe('createGuestSession', () => {

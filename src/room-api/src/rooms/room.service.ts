@@ -13,6 +13,7 @@ import { GuestSessionDto } from './dto/guest-session.dto';
 import { PayRoomDto } from './dto/pay-room.dto';
 import { ExtendRoomDto } from './dto/extend-room.dto';
 import { getPackage, calculateRetentionUntil } from './room-packages';
+import { RetentionService } from './retention.service';
 
 const GUEST_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export class RoomService {
     private readonly membershipRepo: Repository<Membership>,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
+    private readonly retentionService: RetentionService,
   ) {}
 
   private generateSlug(): string {
@@ -180,6 +182,8 @@ export class RoomService {
     room.paymentId = savedPayment.id;
     await this.roomRepo.save(room);
 
+    await this.retentionService.scheduleRetention(room.id, retentionUntil);
+
     return { paymentId: savedPayment.id, retentionUntil, room };
   }
 
@@ -204,6 +208,8 @@ export class RoomService {
 
     room.retentionUntil = newRetention;
     await this.roomRepo.save(room);
+
+    await this.retentionService.scheduleRetention(room.id, newRetention);
 
     return { retentionUntil: newRetention, room };
   }
