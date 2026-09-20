@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -21,9 +22,11 @@ import { Media } from './media.entity';
 import { Job } from '../jobs/job.entity';
 import { Room } from '../rooms/room.entity';
 import { Membership } from '../rooms/membership.entity';
+import { ContentReport } from '../content/content.entity';
 import { InitUploadDto, VALID_MEDIA_KINDS } from './dto/init-upload.dto';
 import { MultipartInitDto } from './dto/multipart-init.dto';
 import { ListMediaDto } from './dto/list-media.dto';
+import { ReportMediaDto } from './dto/report-media.dto';
 
 const PRESIGNED_URL_TTL_SECONDS = 900;
 const MULTIPART_TTL_MS = 24 * 60 * 60 * 1000;
@@ -47,6 +50,8 @@ export class MediaService {
     private readonly membershipRepo: Repository<Membership>,
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
+    @InjectRepository(ContentReport)
+    private readonly contentReportRepo: Repository<ContentReport>,
     config: ConfigService,
   ) {
     this.bucketName = config.get<string>('S3_BUCKET') || '';
@@ -403,5 +408,82 @@ export class MediaService {
     media.likedBy.push(membership.deviceId);
     await this.mediaRepo.save(media);
     return { liked: true };
+  }
+
+  async reportMedia(mediaId: string, guestToken: string, dto: ReportMediaDto): Promise<{ reportId: string }> {
+    const membership = await this.verifyGuest(mediaId, guestToken);
+    const media = await this.mediaRepo.findOneBy({ id: mediaId });
+    
+    if (!media) {
+      throw new NotFoundException(`Media ${mediaId} not found`);
+    }
+
+    const report = this.contentReportRepo.create({
+      mediaId,
+      reporterRef: membership.deviceId,
+      reason: dto.reason,
+      status: 'pending',
+    });
+    const saved = await this.contentReportRepo.save(report);
+    return { reportId: saved.id };
+  }
+
+  async approveMedia(mediaId: string, moderatorToken: string): Promise<Media> {
+    const membership = await this.verifyGuest(mediaId, moderatorToken);
+    if (membership.role !== 'Moderator') {
+      throw new ForbiddenException('Only moderators can approve media');
+    }
+
+    const media = await this.mediaRepo.findOneBy({ id: mediaId });
+    if (!media) {
+      throw new NotFoundException(`Media ${mediaId} not found`);
+    }
+
+    media.status = 'approved';
+    media.moderationNote = null;
+    await this.mediaRepo.save(media);
+
+    const report = await this.contentReportRepo.findOneBy({ mediaId });
+    if (report) {
+      report.status = 'reviewed';
+      report.handledBy = membership.deviceId;
+      report.handledAt = new Date();
+      await this.contentReportRepo.save(report);
+    }
+
+    return media;
+  }
+
+  async rejectMedia(mediaId: string, moderatorToken: string, note?: string): Promise<Media> {
+    const membership = await this.verifyGuest(mediaId, moderatorToken);
+    if (membership.role !== 'Moderator') {
+      throw new ForbiddenException('Only moderators can reject media');
+    }
+
+    const media = await this.mediaRepo.findOneBy({ id: mediaId });
+    if (!media) {
+      throw new NotFoundException(`Media ${mediaId} not found`);
+    }
+
+    media.status = 'rejected';
+    media.moderationNote = note ?? null;
+    await this.mediaRepo.save(media);
+
+    const report = await this.contentReportRepo.findOneBy({ mediaId });
+    if (report) {
+      report.status = 'reviewed';
+      report.handledBy = membership.deviceId;
+      report.handledAt = new Date();
+      await this.contentReportRepo.save(report);
+    }
+
+    return media;
+  }
+
+  async getBlockedList(roomId: string): Promise<Media[]> {
+    return this.mediaRepo.find({
+      where: { roomId, status: In(['rejected', 'blocked']) },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

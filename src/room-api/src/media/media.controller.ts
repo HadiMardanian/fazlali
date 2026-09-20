@@ -14,6 +14,7 @@ import { MultipartInitDto } from './dto/multipart-init.dto';
 import { PartUrlDto } from './dto/part-url.dto';
 import { MultipartCompleteDto } from './dto/multipart-complete.dto';
 import { ListMediaDto } from './dto/list-media.dto';
+import { ReportMediaDto } from './dto/report-media.dto';
 
 @Controller()
 export class MediaController {
@@ -78,5 +79,36 @@ export class MediaController {
     @Headers('x-guest-token') guestToken?: string,
   ) {
     return this.mediaService.likeMedia(id, guestToken || '');
+  }
+
+  @Post('media/:id/report')
+  reportMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReportMediaDto,
+    @Headers('x-guest-token') guestToken?: string,
+  ) {
+    return this.mediaService.reportMedia(id, guestToken || '', dto);
+  }
+
+  @Post('media/:id/approve')
+  approveMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-guest-token') moderatorToken?: string,
+  ) {
+    return this.mediaService.approveMedia(id, moderatorToken || '');
+  }
+
+  @Post('media/:id/reject')
+  rejectMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-guest-token') moderatorToken?: string,
+    @Body('note') note?: string,
+  ) {
+    return this.mediaService.rejectMedia(id, moderatorToken || '', note);
+  }
+
+  @Get('rooms/:id/blocked')
+  getBlockedList(@Param('id', ParseUUIDPipe) id: string) {
+    return this.mediaService.getBlockedList(id);
   }
 }

@@ -66,6 +66,9 @@ export class Media {
   @Column({ type: 'jsonb', nullable: true })
   likedBy: string[] | null;
 
+  @Column({ type: 'nvarchar', length: 500, nullable: true })
+  moderationNote: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

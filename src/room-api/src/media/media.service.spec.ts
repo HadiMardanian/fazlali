@@ -8,6 +8,7 @@ import { Media } from './media.entity';
 import { Job } from '../jobs/job.entity';
 import { Room } from '../rooms/room.entity';
 import { Membership } from '../rooms/membership.entity';
+import { ContentReport } from '../content/content.entity';
 import { RoomMode } from '../rooms/room-mode.enum';
 
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -114,14 +115,20 @@ function buildService(membership: Membership | null, media = makeMedia()) {
     create: jest.fn().mockImplementation((j: Partial<Job>) => j as Job),
     save: jest.fn().mockResolvedValue(undefined),
   };
+  const contentReportRepo = {
+    create: jest.fn().mockImplementation((r: Partial<ContentReport>) => ({ ...r, id: 'report-1' } as ContentReport)),
+    save: jest.fn().mockResolvedValue({ id: 'report-1' } as ContentReport),
+    findOneBy: jest.fn().mockResolvedValue(null),
+  };
   const service = new MediaService(
     mediaRepo as any,
     roomRepo as any,
     membershipRepo as any,
     jobRepo as any,
+    contentReportRepo as any,
     makeConfig({ S3_BUCKET: 'test-bucket' }),
   );
-  return { service, mediaRepo, roomRepo, membershipRepo, jobRepo };
+  return { service, mediaRepo, roomRepo, membershipRepo, jobRepo, contentReportRepo };
 }
 
 describe('MediaService', () => {
@@ -438,6 +445,76 @@ describe('MediaService', () => {
       const { service } = buildService(null, approvedMedia);
 
       await expect(service.likeMedia(MEDIA_ID, 'invalid-token'))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('reportMedia', () => {
+    it('creates ContentReport with pending status', async () => {
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service, contentReportRepo } = buildService(activeMembership, approvedMedia);
+
+      const result = await service.reportMedia(MEDIA_ID, 'guest-token', { reason: 'Inappropriate content' });
+
+      expect(result.reportId).toBeDefined();
+      expect(contentReportRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mediaId: MEDIA_ID, status: 'pending' }),
+      );
+    });
+
+    it('rejects invalid token with 403', async () => {
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service } = buildService(null, approvedMedia);
+
+      await expect(service.reportMedia(MEDIA_ID, 'invalid-token', { reason: 'Bad content' }))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('approveMedia', () => {
+    it('sets status to approved for moderator', async () => {
+      const moderatorMembership = { ...activeMembership, role: 'Moderator' };
+      const rejectedMedia = makeMedia({ status: 'rejected' });
+      const { service, mediaRepo } = buildService(moderatorMembership, rejectedMedia);
+
+      const result = await service.approveMedia(MEDIA_ID, 'mod-token');
+
+      expect(result.status).toBe('approved');
+      expect(mediaRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'approved', moderationNote: null }),
+      );
+    });
+
+    it('rejects non-moderator with 403', async () => {
+      const guestMembership = { ...activeMembership, role: 'Guest' };
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service } = buildService(guestMembership, approvedMedia);
+
+      await expect(service.approveMedia(MEDIA_ID, 'guest-token'))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('rejectMedia', () => {
+    it('sets status to rejected with note for moderator', async () => {
+      const moderatorMembership = { ...activeMembership, role: 'Moderator' };
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service, mediaRepo } = buildService(moderatorMembership, approvedMedia);
+
+      const result = await service.rejectMedia(MEDIA_ID, 'mod-token', 'Violates guidelines');
+
+      expect(result.status).toBe('rejected');
+      expect(mediaRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'rejected', moderationNote: 'Violates guidelines' }),
+      );
+    });
+
+    it('rejects non-moderator with 403', async () => {
+      const guestMembership = { ...activeMembership, role: 'Guest' };
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service } = buildService(guestMembership, approvedMedia);
+
+      await expect(service.rejectMedia(MEDIA_ID, 'guest-token'))
         .rejects.toBeInstanceOf(ForbiddenException);
     });
   });
