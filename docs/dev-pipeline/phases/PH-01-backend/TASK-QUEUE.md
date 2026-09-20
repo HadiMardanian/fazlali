@@ -8,7 +8,7 @@
 | 4 | TASK-UPL-01-01 | UPL-01 | Presigned upload init/complete | P0 | done | ROOM-01, ROOM-03 | UPL-02, UPL-03, GAL-01 | `agent-prompts/TASK-UPL-01-01.md` |
 | 5 | TASK-UPL-02-01 | UPL-02 | Multipart/chunked resume | P0 | done | UPL-01 | UPL-03 | `agent-prompts/TASK-UPL-02-01.md` |
 | 6 | TASK-UPL-03-01 | UPL-03 | Processing queue + worker | P1 | done | UPL-01 | GAL-01 | `agent-prompts/TASK-UPL-03-01.md` |
-| 7 | TASK-RET-01-01 | RET-01 | Packages + payment + extend | P0 | ready | ROOM-01 | RET-03 | `agent-prompts/TASK-RET-01-01.md` |
+| 7 | TASK-RET-01-01 | RET-01 | Packages + payment + extend | P0 | done | ROOM-01 | RET-03 | `agent-prompts/TASK-RET-01-01.md` |
 | 8 | TASK-UPL-04-01 | UPL-04 | Malware scan + GPS strip | P1 | ready | UPL-03 | GAL-01 | `agent-prompts/TASK-UPL-04-01.md` |
 | 9 | TASK-GAL-01-01 | GAL-01 | Mode-gated gallery + likes | P1 | ready | UPL-03, ROOM-03 | GAL-03 | `agent-prompts/TASK-GAL-01-01.md` |
 |------:|---------|---------|-------|----------|--------|------------|--------|--------|
