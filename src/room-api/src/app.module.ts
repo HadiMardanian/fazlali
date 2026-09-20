@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoomModule } from './rooms/room.module';
 import { Room } from './rooms/room.entity';
 import { Membership } from './rooms/membership.entity';
+import { Payment } from './rooms/payment.entity';
 import { MediaModule } from './media/media.module';
 import { Media } from './media/media.entity';
 import { JobsModule } from './jobs/jobs.module';
@@ -24,7 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         username: config.get('DATABASE_USERNAME', 'sa'),
         password: config.get('DATABASE_PASSWORD', 'Your_password123'),
         database: config.get('DATABASE_NAME', 'room'),
-        entities: [Room, Membership, Media, Job],
+        entities: [Room, Membership, Payment, Media, Job],
         synchronize: false,
         options: {
           encrypt: false,

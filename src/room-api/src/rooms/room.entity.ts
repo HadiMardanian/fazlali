@@ -45,6 +45,9 @@ export class Room {
   @Column({ type: 'varchar', length: 1000, nullable: true })
   branding: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  paymentId: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

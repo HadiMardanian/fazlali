@@ -15,6 +15,8 @@ import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { GuestSessionDto } from './dto/guest-session.dto';
+import { PayRoomDto } from './dto/pay-room.dto';
+import { ExtendRoomDto } from './dto/extend-room.dto';
 import { Room } from './room.entity';
 
 @Controller('rooms')
@@ -62,5 +64,23 @@ export class RoomController {
     @Headers('x-device-id') deviceId?: string,
   ) {
     return this.roomService.createGuestSession(id, dto, deviceId || 'unknown');
+  }
+
+  @Post(':id/pay')
+  pay(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PayRoomDto,
+    @Headers('x-owner-id') ownerId?: string,
+  ) {
+    return this.roomService.pay(id, dto, ownerId || '');
+  }
+
+  @Post(':id/extend')
+  extend(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ExtendRoomDto,
+    @Headers('x-owner-id') ownerId?: string,
+  ) {
+    return this.roomService.extend(id, dto, ownerId || '');
   }
 }
