@@ -63,6 +63,9 @@ export class Media {
   @Column({ type: 'nvarchar', length: 500, nullable: true })
   malwareNote: string | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  likedBy: string[] | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

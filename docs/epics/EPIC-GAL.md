@@ -5,7 +5,7 @@
 
 | Feature ID | Feature | Status | Priority | depends_on | co_req | blocks |
 |------------|---------|--------|----------|------------|--------|--------|
-| GAL-01 | Mode-gated gallery + likes | todo | P1 | UPL-03, ROOM-03 | — | GAL-03 |
+| GAL-01 | Mode-gated gallery + likes | done | P1 | UPL-03, ROOM-03 | — | GAL-03 |
 | GAL-02 | Report + approve/reject queue | todo | P1 | GAL-01 | ROOM-04 | — |
 | GAL-03 | Live Slideshow feed | todo | P2 | GAL-01 | — | — |
 | GAL-04 | Studio scoped upload | todo | P2 | ROOM-01 | — | — |

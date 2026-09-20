@@ -10,5 +10,5 @@
 | 6 | TASK-UPL-03-01 | UPL-03 | Processing queue + worker | P1 | done | UPL-01 | GAL-01 | `agent-prompts/TASK-UPL-03-01.md` |
 | 7 | TASK-RET-01-01 | RET-01 | Packages + payment + extend | P0 | done | ROOM-01 | RET-03 | `agent-prompts/TASK-RET-01-01.md` |
 | 8 | TASK-UPL-04-01 | UPL-04 | Malware scan + GPS strip | P1 | done | UPL-03 | GAL-01 | `agent-prompts/TASK-UPL-04-01.md` |
-| 9 | TASK-GAL-01-01 | GAL-01 | Mode-gated gallery + likes | P1 | ready | UPL-03, ROOM-03 | GAL-03 | `agent-prompts/TASK-GAL-01-01.md` |
+| 9 | TASK-GAL-01-01 | GAL-01 | Mode-gated gallery + likes | P1 | done | UPL-03, ROOM-03 | GAL-03 | `agent-prompts/TASK-GAL-01-01.md` |
 |------:|---------|---------|-------|----------|--------|------------|--------|--------|

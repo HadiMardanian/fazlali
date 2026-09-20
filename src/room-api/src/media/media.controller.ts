@@ -1,9 +1,11 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Param,
   Headers,
+  Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { MediaService } from './media.service';
@@ -11,6 +13,7 @@ import { InitUploadDto } from './dto/init-upload.dto';
 import { MultipartInitDto } from './dto/multipart-init.dto';
 import { PartUrlDto } from './dto/part-url.dto';
 import { MultipartCompleteDto } from './dto/multipart-complete.dto';
+import { ListMediaDto } from './dto/list-media.dto';
 
 @Controller()
 export class MediaController {
@@ -58,5 +61,22 @@ export class MediaController {
   @Post('media/:id/multipart:abort')
   multipartAbort(@Param('id', ParseUUIDPipe) id: string) {
     return this.mediaService.multipartAbort(id);
+  }
+
+  @Get('rooms/:id/media')
+  listMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-guest-token') guestToken?: string,
+    @Query() query?: ListMediaDto,
+  ) {
+    return this.mediaService.listMedia(id, guestToken || '', query || {});
+  }
+
+  @Post('media/:id/like')
+  likeMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-guest-token') guestToken?: string,
+  ) {
+    return this.mediaService.likeMedia(id, guestToken || '');
   }
 }

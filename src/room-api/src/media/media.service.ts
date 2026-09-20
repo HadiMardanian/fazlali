@@ -23,6 +23,7 @@ import { Room } from '../rooms/room.entity';
 import { Membership } from '../rooms/membership.entity';
 import { InitUploadDto, VALID_MEDIA_KINDS } from './dto/init-upload.dto';
 import { MultipartInitDto } from './dto/multipart-init.dto';
+import { ListMediaDto } from './dto/list-media.dto';
 
 const PRESIGNED_URL_TTL_SECONDS = 900;
 const MULTIPART_TTL_MS = 24 * 60 * 60 * 1000;
@@ -329,5 +330,78 @@ export class MediaService {
     await this.mediaRepo.save(media);
 
     return { mediaId, status: 'aborted' };
+  }
+
+  async listMedia(
+    roomId: string,
+    guestToken: string,
+    dto: ListMediaDto,
+  ): Promise<{ media: Media[]; total: number }> {
+    const membership = await this.verifyGuest(roomId, guestToken);
+    const room = await this.roomRepo.findOneBy({ id: roomId });
+    
+    if (!room) {
+      throw new NotFoundException(`Room ${roomId} not found`);
+    }
+
+    // Private mode: only owner can see
+    if (room.mode === 'Private') {
+      throw new ForbiddenException('Private rooms do not allow guest media access');
+    }
+
+    // UploadOnly mode: hide others' uploads from guests
+    if (room.mode === 'UploadOnly') {
+      const ownMedia = await this.mediaRepo.find({
+        where: { roomId, uploaderRef: membership.deviceId, status: 'approved' },
+        skip: ((dto.page ?? 1) - 1) * (dto.limit ?? 20),
+        take: dto.limit ?? 20,
+      });
+      const total = await this.mediaRepo.count({
+        where: { roomId, uploaderRef: membership.deviceId, status: 'approved' },
+      });
+      return { media: ownMedia, total };
+    }
+
+    // Shared/Moderated: show approved media
+    const where: any = { roomId, status: 'approved' };
+    if (dto.status) {
+      where.status = dto.status;
+    }
+
+    const [media, total] = await this.mediaRepo.findAndCount({
+      where,
+      skip: ((dto.page ?? 1) - 1) * (dto.limit ?? 20),
+      take: dto.limit ?? 20,
+      order: { createdAt: 'DESC' },
+    });
+
+    return { media, total };
+  }
+
+  async likeMedia(mediaId: string, guestToken: string): Promise<{ liked: boolean }> {
+    const membership = await this.verifyGuest(mediaId, guestToken);
+    const media = await this.mediaRepo.findOneBy({ id: mediaId });
+    
+    if (!media) {
+      throw new NotFoundException(`Media ${mediaId} not found`);
+    }
+    if (media.status !== 'approved') {
+      throw new BadRequestException('Can only like approved media');
+    }
+
+    if (!media.likedBy) {
+      media.likedBy = [];
+    }
+
+    const likeIndex = media.likedBy.indexOf(membership.deviceId);
+    if (likeIndex >= 0) {
+      media.likedBy.splice(likeIndex, 1);
+      await this.mediaRepo.save(media);
+      return { liked: false };
+    }
+
+    media.likedBy.push(membership.deviceId);
+    await this.mediaRepo.save(media);
+    return { liked: true };
   }
 }

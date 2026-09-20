@@ -102,6 +102,9 @@ function makeMedia(overrides: Partial<Media> = {}): Media {
 function buildService(membership: Membership | null, media = makeMedia()) {
   const mediaRepo = {
     findOneBy: jest.fn().mockResolvedValue(media),
+    find: jest.fn().mockResolvedValue([]),
+    findAndCount: jest.fn().mockResolvedValue([[], 0]),
+    count: jest.fn().mockResolvedValue(0),
     create: jest.fn().mockImplementation((m: Partial<Media>) => ({ ...m, id: MEDIA_ID } as Media)),
     save: jest.fn().mockImplementation((m: Media) => Promise.resolve(m)),
   };
@@ -354,6 +357,88 @@ describe('MediaService', () => {
     it('rejects media without multipart upload with 400', async () => {
       const { service } = buildService(null, makeMedia());
       await expect(service.multipartAbort(MEDIA_ID)).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('listMedia', () => {
+    it('returns approved media in Shared mode', async () => {
+      const sharedRoom = { ...room, mode: RoomMode.SHARED };
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service, roomRepo, mediaRepo } = buildService(activeMembership, approvedMedia);
+      (roomRepo.findOneBy as jest.Mock).mockResolvedValue(sharedRoom);
+      (mediaRepo.findAndCount as jest.Mock).mockResolvedValue([[approvedMedia], 1]);
+
+      const result = await service.listMedia(ROOM_ID, 'guest-token', {});
+
+      expect(result.media).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('returns empty for UploadOnly mode guests', async () => {
+      const uploadOnlyRoom = { ...room, mode: RoomMode.UPLOAD_ONLY };
+      const { service, roomRepo, mediaRepo } = buildService(activeMembership);
+      (roomRepo.findOneBy as jest.Mock).mockResolvedValue(uploadOnlyRoom);
+      (mediaRepo.find as jest.Mock).mockResolvedValue([]);
+      (mediaRepo.count as jest.Mock).mockResolvedValue(0);
+
+      const result = await service.listMedia(ROOM_ID, 'guest-token', {});
+
+      expect(result.media).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+
+    it('rejects Private mode with 403', async () => {
+      const { service } = buildService(activeMembership);
+      await expect(service.listMedia(ROOM_ID, 'guest-token', {}))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('rejects invalid token with 403', async () => {
+      const { service } = buildService(null);
+      await expect(service.listMedia(ROOM_ID, 'invalid-token', {}))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('likeMedia', () => {
+    it('adds like and returns liked=true', async () => {
+      const approvedMedia = makeMedia({ status: 'approved', likedBy: null });
+      const { service, mediaRepo } = buildService(activeMembership, approvedMedia);
+
+      const result = await service.likeMedia(MEDIA_ID, 'guest-token');
+
+      expect(result.liked).toBe(true);
+      expect(mediaRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ likedBy: ['device-1'] }),
+      );
+    });
+
+    it('removes like and returns liked=false', async () => {
+      const approvedMedia = makeMedia({ status: 'approved', likedBy: ['device-1'] });
+      const { service, mediaRepo } = buildService(activeMembership, approvedMedia);
+
+      const result = await service.likeMedia(MEDIA_ID, 'guest-token');
+
+      expect(result.liked).toBe(false);
+      expect(mediaRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ likedBy: [] }),
+      );
+    });
+
+    it('rejects liking unapproved media with 400', async () => {
+      const queuedMedia = makeMedia({ status: 'queued' });
+      const { service } = buildService(activeMembership, queuedMedia);
+
+      await expect(service.likeMedia(MEDIA_ID, 'guest-token'))
+        .rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects invalid token with 403', async () => {
+      const approvedMedia = makeMedia({ status: 'approved' });
+      const { service } = buildService(null, approvedMedia);
+
+      await expect(service.likeMedia(MEDIA_ID, 'invalid-token'))
+        .rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 });
