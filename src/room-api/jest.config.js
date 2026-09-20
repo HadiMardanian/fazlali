@@ -13,7 +13,7 @@ module.exports = {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@nestjs|@mikro-orm|typeorm|rxjs|class-transformer|class-validator))',
+    'node_modules/(?!(@nestjs|@mikro-orm|typeorm|rxjs|class-transformer|class-validator|@aws-sdk))',
   ],
   collectCoverageFrom: ['**/*.ts'],
   coverageDirectory: '../coverage',

@@ -12,4 +12,5 @@
 | 8 | TASK-UPL-04-01 | UPL-04 | Malware scan + GPS strip | P1 | done | UPL-03 | GAL-01 | `agent-prompts/TASK-UPL-04-01.md` |
 | 9 | TASK-GAL-01-01 | GAL-01 | Mode-gated gallery + likes | P1 | done | UPL-03, ROOM-03 | GAL-03 | `agent-prompts/TASK-GAL-01-01.md` |
 | 10 | TASK-GAL-02-01 | GAL-02 | Report + approve/reject queue | P1 | done | GAL-01 | ROOM-04 | `agent-prompts/TASK-GAL-02-01.md` |
+| 11 | TASK-RET-02-01 | RET-02 | ZIP build + expiring downloads | P1 | done | UPL-01 | — | `agent-prompts/TASK-RET-02-01.md` |
 |------:|---------|---------|-------|----------|--------|------------|--------|--------|

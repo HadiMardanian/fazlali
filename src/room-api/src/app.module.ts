@@ -12,6 +12,8 @@ import { Job } from './jobs/job.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ContentModule } from './content/content.module';
 import { ContentReport } from './content/content.entity';
+import { ZipModule } from './zip/zip.module';
+import { Zip } from './zip/zip.entity';
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { ContentReport } from './content/content.entity';
         username: config.get('DATABASE_USERNAME', 'sa'),
         password: config.get('DATABASE_PASSWORD', 'Your_password123'),
         database: config.get('DATABASE_NAME', 'room'),
-        entities: [Room, Membership, Payment, Media, Job, ContentReport],
+        entities: [Room, Membership, Payment, Media, Job, ContentReport, Zip],
         synchronize: false,
         options: {
           encrypt: false,
@@ -39,6 +41,7 @@ import { ContentReport } from './content/content.entity';
     MediaModule,
     JobsModule,
     ContentModule,
+    ZipModule,
   ],
 })
 export class AppModule {}

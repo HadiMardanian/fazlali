@@ -7,6 +7,7 @@ import {
   Headers,
   Query,
   ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { MediaService } from './media.service';
 import { InitUploadDto } from './dto/init-upload.dto';
@@ -15,10 +16,14 @@ import { PartUrlDto } from './dto/part-url.dto';
 import { MultipartCompleteDto } from './dto/multipart-complete.dto';
 import { ListMediaDto } from './dto/list-media.dto';
 import { ReportMediaDto } from './dto/report-media.dto';
+import { ZipService } from '../zip/zip.service';
 
 @Controller()
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly mediaService: MediaService,
+    private readonly zipService: ZipService,
+  ) {}
 
   @Post('rooms/:id/media:init')
   initUpload(
@@ -110,5 +115,21 @@ export class MediaController {
   @Get('rooms/:id/blocked')
   getBlockedList(@Param('id', ParseUUIDPipe) id: string) {
     return this.mediaService.getBlockedList(id);
+  }
+
+  @Post('rooms/:id/zip')
+  createZip(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('x-owner-id') ownerId?: string,
+  ) {
+    if (!ownerId) {
+      throw new BadRequestException('Owner ID required');
+    }
+    return this.zipService.createZipRequest(id, ownerId, '');
+  }
+
+  @Get('zips/:id')
+  getZip(@Param('id', ParseUUIDPipe) id: string) {
+    return this.zipService.getZipDownload(id);
   }
 }
