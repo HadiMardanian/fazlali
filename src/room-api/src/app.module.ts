@@ -5,6 +5,7 @@ import { RoomModule } from './rooms/room.module';
 import { Room } from './rooms/room.entity';
 import { Membership } from './rooms/membership.entity';
 import { Payment } from './rooms/payment.entity';
+import { RetentionPolicy } from './rooms/retention-policy.entity';
 import { MediaModule } from './media/media.module';
 import { Media } from './media/media.entity';
 import { JobsModule } from './jobs/jobs.module';
@@ -14,6 +15,7 @@ import { ContentModule } from './content/content.module';
 import { ContentReport } from './content/content.entity';
 import { ZipModule } from './zip/zip.module';
 import { Zip } from './zip/zip.entity';
+import { JobDispatcher } from './jobs/job.dispatcher';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { Zip } from './zip/zip.entity';
         username: config.get('DATABASE_USERNAME', 'sa'),
         password: config.get('DATABASE_PASSWORD', 'Your_password123'),
         database: config.get('DATABASE_NAME', 'room'),
-        entities: [Room, Membership, Payment, Media, Job, ContentReport, Zip],
+        entities: [Room, Membership, Payment, RetentionPolicy, Media, Job, ContentReport, Zip],
         synchronize: false,
         options: {
           encrypt: false,
@@ -43,5 +45,6 @@ import { Zip } from './zip/zip.entity';
     ContentModule,
     ZipModule,
   ],
+  providers: [JobDispatcher],
 })
 export class AppModule {}

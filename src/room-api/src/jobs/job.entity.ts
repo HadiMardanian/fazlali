@@ -35,6 +35,9 @@ export class Job {
   @Column({ type: 'varchar', length: 255, nullable: true })
   zipId: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  policyId: string | null;
+
   @ManyToOne(() => Media, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'mediaId' })
   media: Media | null;

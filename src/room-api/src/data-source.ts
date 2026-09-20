@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { Room } from './rooms/room.entity';
 import { Membership } from './rooms/membership.entity';
 import { Payment } from './rooms/payment.entity';
+import { RetentionPolicy } from './rooms/retention-policy.entity';
 import { Media } from './media/media.entity';
 import { Job } from './jobs/job.entity';
 import { ContentReport } from './content/content.entity';
@@ -14,7 +15,7 @@ export default new DataSource({
   username: process.env.DATABASE_USERNAME || 'sa',
   password: process.env.DATABASE_PASSWORD || 'Your_password123',
   database: process.env.DATABASE_NAME || 'room',
-  entities: [Room, Membership, Payment, Media, Job, ContentReport, Zip],
+  entities: [Room, Membership, Payment, RetentionPolicy, Media, Job, ContentReport, Zip],
   migrations: ['src/migrations/*.ts'],
   options: {
     encrypt: false,

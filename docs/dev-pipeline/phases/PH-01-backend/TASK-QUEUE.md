@@ -13,4 +13,5 @@
 | 9 | TASK-GAL-01-01 | GAL-01 | Mode-gated gallery + likes | P1 | done | UPL-03, ROOM-03 | GAL-03 | `agent-prompts/TASK-GAL-01-01.md` |
 | 10 | TASK-GAL-02-01 | GAL-02 | Report + approve/reject queue | P1 | done | GAL-01 | ROOM-04 | `agent-prompts/TASK-GAL-02-01.md` |
 | 11 | TASK-RET-02-01 | RET-02 | ZIP build + expiring downloads | P1 | done | UPL-01 | — | `agent-prompts/TASK-RET-02-01.md` |
+| 12 | TASK-RET-03-01 | RET-03 | Expiry notices + 7-day grace | P1 | ready | RET-01 | — | `agent-prompts/TASK-RET-03-01.md` |
 |------:|---------|---------|-------|----------|--------|------------|--------|--------|
