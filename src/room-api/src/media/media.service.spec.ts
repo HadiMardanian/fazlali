@@ -58,6 +58,7 @@ const room: Room = {
   inviteLink: 'https://localhost/r/aaaaaaaaaa',
   pinHash: null,
   branding: null,
+  paymentId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

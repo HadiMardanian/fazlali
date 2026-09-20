@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 export const VALID_PACKAGES = ['Basic', 'Wedding', 'Premium', 'Archive'] as const;
 
 export type PackageName = typeof VALID_PACKAGES[number];
@@ -20,7 +22,7 @@ export const PACKAGES: Record<PackageName, PackageConfig> = {
 
 export function getPackage(name: string): PackageConfig {
   if (!VALID_PACKAGES.includes(name as PackageName)) {
-    throw new Error(`Invalid package: ${name}. Must be one of: ${VALID_PACKAGES.join(', ')}`);
+    throw new BadRequestException(`Invalid package: ${name}. Must be one of: ${VALID_PACKAGES.join(', ')}`);
   }
   return PACKAGES[name as PackageName];
 }

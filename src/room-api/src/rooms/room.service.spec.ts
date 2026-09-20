@@ -1,17 +1,20 @@
 import {
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { RoomService } from './room.service';
 import { Room } from './room.entity';
 import { Membership } from './membership.entity';
+import { Payment } from './payment.entity';
 import { RoomMode } from './room-mode.enum';
 
 describe('RoomService', () => {
   let service: RoomService;
   let roomRepo: Record<string, jest.Mock>;
   let membershipRepo: Record<string, jest.Mock>;
+  let paymentRepo: Record<string, jest.Mock>;
 
   const room: Room = {
     id: 'b4b3c9a8-0000-4000-8000-000000000001',
@@ -26,6 +29,7 @@ describe('RoomService', () => {
     inviteLink: 'https://localhost/r/aaaaaaaaaa',
     pinHash: null,
     branding: null,
+    paymentId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -42,7 +46,11 @@ describe('RoomService', () => {
       create: jest.fn().mockImplementation((m: Partial<Membership>) => m as Membership),
       save: jest.fn().mockImplementation((m: Membership) => Promise.resolve(m)),
     };
-    service = new RoomService(roomRepo as any, membershipRepo as any);
+    paymentRepo = {
+      create: jest.fn().mockImplementation((p: Partial<Payment>) => ({ ...p, id: 'pay-1' } as Payment)),
+      save: jest.fn().mockImplementation((p: Payment) => Promise.resolve(p)),
+    };
+    service = new RoomService(roomRepo as any, membershipRepo as any, paymentRepo as any);
   });
 
   describe('createGuestSession', () => {
@@ -112,6 +120,64 @@ describe('RoomService', () => {
         { roomId: room.id },
         { sessionExpiry: expect.any(Date) },
       );
+    });
+  });
+
+  describe('pay', () => {
+    it('sets package + retentionUntil and creates Payment record', async () => {
+      const result = await service.pay(room.id, { package: 'Wedding', days: 30 }, 'owner-1');
+
+      expect(result.retentionUntil).toBeInstanceOf(Date);
+      expect(result.retentionUntil.getTime() - Date.now()).toBeGreaterThanOrEqual(29 * 24 * 60 * 60 * 1000);
+      expect(result.retentionUntil.getTime() - Date.now()).toBeLessThanOrEqual(31 * 24 * 60 * 60 * 1000);
+      expect(paymentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ package: 'Wedding', status: 'completed' }),
+      );
+      expect(roomRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ package: 'Wedding', retentionUntil: expect.any(Date), paymentId: expect.any(String) }),
+      );
+    });
+
+    it('throws BadRequestException for invalid package', async () => {
+      await expect(service.pay(room.id, { package: 'Invalid' }, 'owner-1'))
+        .rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws ForbiddenException for wrong ownerId', async () => {
+      await expect(service.pay(room.id, { package: 'Basic' }, 'wrong-owner'))
+        .rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('throws NotFoundException for unknown room', async () => {
+      roomRepo.findOneBy.mockResolvedValueOnce(null);
+      await expect(service.pay(room.id, { package: 'Basic' }, 'owner-1'))
+        .rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('extend', () => {
+    it('adds days to retentionUntil and creates Payment', async () => {
+      const initialRetention = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const extendedRoom = { ...room, retentionUntil: initialRetention };
+      roomRepo.findOneBy.mockResolvedValue(extendedRoom);
+
+      const result = await service.extend(room.id, { days: 14 }, 'owner-1');
+
+      expect(result.retentionUntil.getTime() - initialRetention.getTime()).toBeCloseTo(14 * 24 * 60 * 60 * 1000, -5);
+      expect(paymentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ period: '14d extension' }),
+      );
+    });
+
+    it('throws NotFoundException for unknown room', async () => {
+      roomRepo.findOneBy.mockResolvedValueOnce(null);
+      await expect(service.extend(room.id, { days: 7 }, 'owner-1'))
+        .rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws ForbiddenException for wrong ownerId', async () => {
+      await expect(service.extend(room.id, { days: 7 }, 'wrong-owner'))
+        .rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 });
