@@ -51,10 +51,11 @@ function makeRoom(overrides: Partial<Room> = {}): Room {
     id: ROOM_ID,
     ownerId: OWNER_ID,
     title: 'Wedding',
+    package: 'Wedding',
     eventDate: null,
     guestCapacity: null,
     mode: 'Private',
-    package: null,
+
     retentionUntil: null,
     status: 'active',
     inviteLink: null,

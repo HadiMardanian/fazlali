@@ -12,12 +12,14 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { GuestSessionDto } from './dto/guest-session.dto';
 import { PayRoomDto } from './dto/pay-room.dto';
 import { ExtendRoomDto } from './dto/extend-room.dto';
+import { RoomStatsDto } from './dto/room-stats.dto';
 import { Room } from './room.entity';
 
 @Controller('rooms')
@@ -107,10 +109,12 @@ export class RoomController {
   }
 
   @Get(':id/stats')
+  @ApiOperation({ summary: 'Get room statistics' })
+  @ApiResponse({ status: 200, description: 'Room stats retrieved successfully', type: RoomStatsDto })
   getStats(
     @Param('id', ParseUUIDPipe) roomId: string,
     @Headers('x-owner-id') ownerId?: string,
-  ) {
+  ): Promise<RoomStatsDto> {
     if (!ownerId) throw new BadRequestException('Owner ID required');
     return this.roomService.getStats(roomId, ownerId);
   }

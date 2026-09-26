@@ -254,7 +254,7 @@ export class RoomService {
     await this.auditService.log(roomId, actorId, 'block', memberId);
   }
 
-  async getStats(roomId: string, actorId: string): Promise<{ joined: number; uploaders: number; files: number; volume: number }> {
+  async getStats(roomId: string, actorId: string) {
     const room = await this.findOne(roomId);
     if (room.ownerId !== actorId) {
       throw new ForbiddenException('Owner mismatch');
@@ -262,15 +262,39 @@ export class RoomService {
 
     const now = new Date();
     const joined = await this.membershipRepo.count({ where: { roomId, sessionExpiry: MoreThan(now) } });
-    const files = await this.mediaRepo.count({ where: { roomId, status: 'approved' } });
     const volumeResult = await this.mediaRepo.query(
       `SELECT COUNT(DISTINCT "uploaderRef") AS uploaders, COUNT(*) AS files, COALESCE(SUM("size"), 0) AS volume FROM "media" WHERE "roomId" = $1 AND "status" = 'approved' AND "uploaderRef" IS NOT NULL`,
       [roomId],
     );
     const uploaderRow = volumeResult[0] || {};
     const uploaders = Number(uploaderRow.uploaders ?? 0);
+    const files = Number(uploaderRow.files ?? 0);
     const volume = Number(uploaderRow.volume ?? 0);
 
-    return { joined, uploaders, files, volume };
+    const joinHistory = await this.membershipRepo.query(
+      `SELECT TO_CHAR("createdAt", 'YYYY-MM-DD') as date, COUNT(*) as joins FROM "membership" WHERE "roomId" = $1 GROUP BY TO_CHAR("createdAt", 'YYYY-MM-DD') ORDER BY date ASC`,
+      [roomId]
+    );
+
+    const uploadHistory = await this.mediaRepo.query(
+      `SELECT TO_CHAR("createdAt", 'YYYY-MM-DD') as date, COUNT(*) as uploads FROM "media" WHERE "roomId" = $1 AND "status" = 'approved' GROUP BY TO_CHAR("createdAt", 'YYYY-MM-DD') ORDER BY date ASC`,
+      [roomId]
+    );
+
+    const historyMap = new Map<string, { date: string; joins: number; uploads: number }>();
+    
+    for (const row of joinHistory) {
+      historyMap.set(row.date, { date: row.date, joins: Number(row.joins), uploads: 0 });
+    }
+    for (const row of uploadHistory) {
+      if (!historyMap.has(row.date)) {
+        historyMap.set(row.date, { date: row.date, joins: 0, uploads: 0 });
+      }
+      historyMap.get(row.date)!.uploads = Number(row.uploads);
+    }
+
+    const history = Array.from(historyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    return { joined, uploaders, files, volume, history };
   }
 }

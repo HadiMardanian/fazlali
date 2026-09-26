@@ -52,6 +52,7 @@ describe('RoomService', () => {
       create: jest.fn().mockImplementation((m: Partial<Membership>) => m as Membership),
       save: jest.fn().mockImplementation((m: Membership) => Promise.resolve(m)),
       count: jest.fn().mockResolvedValue(0),
+      query: jest.fn(),
     };
     paymentRepo = {
       create: jest.fn().mockImplementation((p: Partial<Payment>) => ({ ...p, id: 'pay-1' } as Payment)),
@@ -249,10 +250,17 @@ describe('RoomService', () => {
   });
 
   describe('getStats', () => {
-    it('returns joined, uploaders, files, volume', async () => {
+    it('returns joined, uploaders, files, volume, and history', async () => {
       membershipRepo.count.mockResolvedValueOnce(5);
+      
+      // First call to mediaRepo.query for volume aggregates
       mediaRepo.query.mockResolvedValueOnce([{ uploaders: 3, files: 10, volume: 50000 }]);
-      mediaRepo.count.mockResolvedValueOnce(10);
+      
+      // Second call to membershipRepo.query for join history
+      membershipRepo.query.mockResolvedValueOnce([{ date: '2026-09-26', joins: 5 }]);
+      
+      // Third call to mediaRepo.query for upload history
+      mediaRepo.query.mockResolvedValueOnce([{ date: '2026-09-26', uploads: 10 }]);
 
       const result = await service.getStats(room.id, 'owner-1');
 
@@ -260,6 +268,8 @@ describe('RoomService', () => {
       expect(result.uploaders).toBe(3);
       expect(result.files).toBe(10);
       expect(result.volume).toBe(50000);
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0]).toEqual({ date: '2026-09-26', joins: 5, uploads: 10 });
     });
 
     it('throws ForbiddenException for non-owner', async () => {
