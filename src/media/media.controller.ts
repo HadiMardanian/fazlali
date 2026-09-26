@@ -126,7 +126,7 @@ export class MediaController {
     if (!ownerId) {
       throw new BadRequestException('Owner ID required');
     }
-    return this.zipService.createZipRequest(id, ownerId, '');
+    return this.zipService.createZipRequest(id, ownerId);
   }
 
   @Get('zips/:id')

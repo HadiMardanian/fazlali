@@ -43,7 +43,7 @@ export class ZipService {
     });
   }
 
-  async createZipRequest(roomId: string, ownerId: string, pkg: string): Promise<{ zipId: string; status: string }> {
+  async createZipRequest(roomId: string, ownerId: string): Promise<{ zipId: string; status: string }> {
     const room = await this.roomRepo.findOneBy({ id: roomId });
     if (!room) {
       throw new NotFoundException(`Room ${roomId} not found`);
@@ -53,7 +53,7 @@ export class ZipService {
     }
 
     const { getPackage } = await import('../rooms/room-packages');
-    const pkgConfig = getPackage(pkg);
+    const pkgConfig = getPackage(room.package ?? 'Basic');
     if (!pkgConfig.zipAllow) {
       throw new ForbiddenException('ZIP downloads not allowed in this package. Please upgrade.');
     }

@@ -97,7 +97,7 @@ describe('ZipService', () => {
     it('creates zip record and enqueues job', async () => {
       const { service, zipRepo, jobRepo, roomRepo, auditService } = buildService();
 
-      const result = await service.createZipRequest(ROOM_ID, OWNER_ID, 'Wedding');
+      const result = await service.createZipRequest(ROOM_ID, OWNER_ID);
 
       expect(result).toEqual({ zipId: ZIP_ID, status: 'pending' });
       expect(roomRepo.findOneBy).toHaveBeenCalledWith({ id: ROOM_ID });
@@ -112,7 +112,7 @@ describe('ZipService', () => {
       const { service, roomRepo } = buildService();
       (roomRepo.findOneBy as jest.Mock).mockResolvedValueOnce(null);
 
-      await expect(service.createZipRequest(ROOM_ID, OWNER_ID, 'Wedding'))
+      await expect(service.createZipRequest(ROOM_ID, OWNER_ID))
         .rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -120,7 +120,7 @@ describe('ZipService', () => {
       const { service, roomRepo } = buildService();
       (roomRepo.findOneBy as jest.Mock).mockImplementationOnce(() => makeRoom({ ownerId: 'other-owner' }));
 
-      await expect(service.createZipRequest(ROOM_ID, OWNER_ID, 'Wedding'))
+      await expect(service.createZipRequest(ROOM_ID, OWNER_ID))
         .rejects.toBeInstanceOf(ForbiddenException);
     });
   });
