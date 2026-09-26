@@ -17,4 +17,8 @@
 | 13 | TASK-ROOM-04-01 | ROOM-04 | Roles + block + audit | P1 | done | ROOM-01, GAL-02 | — | `agent-prompts/TASK-ROOM-04-01.md` |
 | 14 | TASK-DEV-01-01 | DEV-01 | Docker compose bindmount & auto-restart | P0 | done | — | — | `agent-prompts/TASK-DEV-01-01.md` |
 | 15 | TASK-DEV-02-01 | DEV-02 | Swagger UI & DTO structural hints | P0 | in_progress | — | — | `agent-prompts/TASK-DEV-02-01.md` |
+| 16 | TASK-RET-05-01 | RET-05 | Fair-use caps enforcement | P1 | done | ROOM-01, UPL-01 | — | `agent-prompts/TASK-RET-05-01.md` |
+| 17 | TASK-RET-04-01 | RET-04 | Stats (join/upload/volume) | P2 | done | UPL-01, GAL-01 | — | `agent-prompts/TASK-RET-04-01.md` |
+| 18 | TASK-GAL-03-01 | GAL-03 | Live Slideshow feed | P2 | in_progress | GAL-01 | — | `agent-prompts/TASK-GAL-03-01.md` |
+| 19 | TASK-GAL-04-01 | GAL-04 | Studio scoped upload | P2 | in_progress | ROOM-01 | — | `agent-prompts/TASK-GAL-04-01.md` |
 |------:|---------|---------|-------|----------|--------|------------|--------|--------|
