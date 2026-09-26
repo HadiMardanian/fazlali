@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: room-dev-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: room
+    ports:
+      - '5432:5432'
+    volumes:
+      - room-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d room']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - room-net
+
+  minio:
+    image: minio/minio
+    container_name: room-dev-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - room-minio-data:/data
+    networks:
+      - room-net
+
+  api:
+    image: node:22-alpine
+    container_name: room-dev-api
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm run migration:run && npm run start:dev"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: '5432'
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: room
+      S3_BUCKET: room-uploads
+      S3_REGION: us-east-1
+      S3_ENDPOINT: http://minio:9000
+      S3_FORCE_PATH_STYLE: 'true'
+      S3_ACCESS_KEY_ID: minio
+      S3_SECRET_ACCESS_KEY: minio123
+    ports:
+      - '3001:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - room-net
+
+volumes:
+  room-db-data:
+  room-minio-data:
+
+networks:
+  room-net:
+    driver: bridge

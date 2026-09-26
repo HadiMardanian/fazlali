@@ -1,6 +1,6 @@
 # Backend RUP — Room Event Content Service
 Source: `docs/wedding-album.md` (converted from `docs/wedding-album.pdf`)
-Stack: NestJS (Node.js) API (RESTful), SQL Server (metadata only), S3-compatible Object Storage, Job Queue, PWA/Web/Mobile clients
+Stack: NestJS (Node.js) API (RESTful), PostgreSQL (metadata only), S3-compatible Object Storage, Job Queue, PWA/Web/Mobile clients
 
 ## 1. Vision
 Room solves scattered guest photo/video collection at events (weddings, birthdays, family, corporate, conferences, cultural, branding). Not raw cloud storage. Shared experience: guests upload instantly, no signup/app install; host receives organized archive. Backend MUST enable no-friction guest upload, scalable direct-to-storage ingest, privacy-controlled gallery, and paid retention lifecycle.
@@ -48,13 +48,13 @@ Rules MUST be enforced server-side per Room, per file, per role.
 - Studio scoped upload endpoint, content flagged as official.
 
 ## 6. Architecture
-- Backend: ASP.NET Core API, RESTful, service layer reusable for Web/PWA/Mobile.
-- DB: SQL Server for structured data + metadata only. No binary blobs.
+- Backend: NestJS (Node.js) API, RESTful, service layer reusable for Web/PWA/Mobile.
+- DB: PostgreSQL for structured data + metadata only. No binary blobs.
 - Storage: S3-compatible Object Storage for photos, videos, thumbnails, ZIPs, transcoded variants. Layout: `{roomId}/{fileId}/{original|thumb|web|parts}`. No public direct access; only signed expiring URLs.
 - Upload path: browser/app → Presigned URL → Object Storage (bypasses backend bandwidth). Backend only issues URLs, tracks state, validates completion.
 - Async: Job Queue outside request cycle for all heavy work.
 
-## 7. Data Model (SQL Server)
+## 7. Data Model (PostgreSQL)
 - Room(id, ownerId, title, eventDate, guestCapacity, mode: Private|UploadOnly|Shared|Moderated, package, retentionUntil, status, inviteLink, pinHash, branding)
 - User(id, role: Owner|Moderator|Photographer, contact, hash)
 - Membership(roomId, userId/deviceId, displayName, role: Guest|Moderator|Photographer, sessionExpiry, blocked)

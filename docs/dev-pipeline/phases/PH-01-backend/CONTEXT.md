@@ -21,7 +21,7 @@
 
 ## Invariants (do not break across phases)
 - Modes Private/UploadOnly/Shared/Moderated enforced server-side.
-- SQL Server metadata only; no blobs in DB.
+- PostgreSQL metadata only; no blobs in DB.
 - No public bucket; signed expiring URLs only.
 - GPS strip + malware scan pre-publish.
 

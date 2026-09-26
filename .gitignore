@@ -4,3 +4,5 @@ docs/dev-pipeline/SESSION-CACHE.md
 src/room-api/node_modules
 src/room-api/dist
 dist/
+.dual-graph/
+node_modules/

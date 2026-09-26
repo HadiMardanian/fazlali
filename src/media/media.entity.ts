@@ -1,0 +1,77 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Room } from '../rooms/room.entity';
+
+@Entity('media')
+export class Media {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  roomId: string;
+
+  @ManyToOne(() => Room, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'roomId' })
+  room: Room;
+
+  @Column({ type: 'varchar', length: 255 })
+  uploaderRef: string;
+
+  @Column({ type: 'varchar', length: 10 })
+  kind: string;
+
+  @Column({ type: 'varchar', length: 500 })
+  originalKey: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  thumbKey: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  webKey: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  multipartUploadId: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  totalParts: number | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  uploadStartedAt: Date | null;
+
+  @Column({ type: 'bigint' })
+  size: number;
+
+  @Column({ type: 'varchar', length: 100 })
+  mime: string;
+
+  @Column({ type: 'varchar', length: 20, default: 'temp' })
+  status: string;
+
+  @Column({ type: 'boolean', default: false })
+  gpsStripped: boolean;
+
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  malwareScanStatus: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  malwareNote: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  likedBy: string[] | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  moderationNote: string | null;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
