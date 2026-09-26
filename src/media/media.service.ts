@@ -88,6 +88,30 @@ export class MediaService {
     return membership;
   }
 
+  private async checkFairUseCaps(room: Room, addSize: number): Promise<void> {
+    const { getPackage } = await import('../rooms/room-packages');
+    const pkgConfig = getPackage(room.package ?? 'Basic');
+
+    if (addSize > pkgConfig.maxFileSizeMB * 1024 * 1024) {
+      throw new BadRequestException(`File size exceeds package limit of ${pkgConfig.maxFileSizeMB} MB`);
+    }
+
+    const stats = await this.mediaRepo.query(
+      `SELECT COUNT(*) AS files, COALESCE(SUM("size"), 0) AS volume FROM "media" WHERE "roomId" = $1 AND "status" != 'aborted' AND "status" != 'blocked'`,
+      [room.id]
+    );
+    const files = Number(stats[0]?.files || 0);
+    const volume = Number(stats[0]?.volume || 0);
+
+    if (files + 1 > pkgConfig.maxFiles) {
+      throw new ForbiddenException(`Room file count limit of ${pkgConfig.maxFiles} reached. Please upgrade package.`);
+    }
+
+    if (volume + addSize > pkgConfig.storageGB * 1024 * 1024 * 1024) {
+      throw new ForbiddenException(`Room storage limit of ${pkgConfig.storageGB} GB reached. Please upgrade package.`);
+    }
+  }
+
   async initUpload(
     roomId: string,
     dto: InitUploadDto,
@@ -103,6 +127,8 @@ export class MediaService {
     if (!room) {
       throw new NotFoundException(`Room ${roomId} not found`);
     }
+
+    await this.checkFairUseCaps(room, dto.size);
 
     const media = this.mediaRepo.create({
       roomId,
@@ -186,6 +212,8 @@ export class MediaService {
     if (!room) {
       throw new NotFoundException(`Room ${roomId} not found`);
     }
+
+    await this.checkFairUseCaps(room, dto.size);
 
     const media = this.mediaRepo.create({
       roomId,

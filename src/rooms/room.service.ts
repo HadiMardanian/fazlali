@@ -125,6 +125,13 @@ export class RoomService {
       throw new BadRequestException(`Room ${roomId} has no active invite link`);
     }
 
+    const { getPackage } = await import('./room-packages');
+    const pkgConfig = getPackage(room.package ?? 'Basic');
+    const currentGuests = await this.membershipRepo.count({ where: { roomId } });
+    if (currentGuests >= pkgConfig.guestCap) {
+      throw new ForbiddenException(`Room guest limit of ${pkgConfig.guestCap} reached. Please wait or upgrade package.`);
+    }
+
     const blocked = await this.membershipRepo.findOneBy({
       roomId,
       deviceId,

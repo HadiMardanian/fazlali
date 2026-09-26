@@ -52,10 +52,16 @@ export class ZipService {
       throw new ForbiddenException('Owner mismatch');
     }
 
+    const { getPackage } = await import('../rooms/room-packages');
+    const pkgConfig = getPackage(pkg);
+    if (!pkgConfig.zipAllow) {
+      throw new ForbiddenException('ZIP downloads not allowed in this package. Please upgrade.');
+    }
+
     const zip = this.zipRepo.create({
       roomId,
       status: 'pending',
-      maxDownloads: null,
+      maxDownloads: pkgConfig.zipDownloadLimit,
       expiresAt: new Date(Date.now() + ZIP_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
     });
     const saved = await this.zipRepo.save(zip);
@@ -81,6 +87,9 @@ export class ZipService {
     }
     if (!zip.fileKey) {
       throw new NotFoundException(`Zip ${zipId} has no file`);
+    }
+    if (zip.maxDownloads && zip.downloadCount >= zip.maxDownloads) {
+      throw new ForbiddenException(`Download limit of ${zip.maxDownloads} reached. Please upgrade or extend your package.`);
     }
 
     zip.downloadCount += 1;
